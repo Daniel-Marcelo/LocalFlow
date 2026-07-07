@@ -29,6 +29,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.statusItemController.update(for: state)
             self?.updateHUD(for: state)
         }
+        controller.onAudioLevel = { [weak self] level in
+            self?.hud.pushLevel(level)
+        }
         controller.objectWillChange
             .receive(on: DispatchQueue.main)
             .sink { [weak self] in
@@ -75,9 +78,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         case .idle:
             hud.hide()
         case .recording, .transcribing, .cleaning:
-            hud.show(text: state.label)
-        case .error(let message):
-            hud.show(text: "⚠️ \(message)")
+            hud.show(state: state)
+        case .error:
+            hud.show(state: state)
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
                 if case .idle = self?.controller.state ?? .idle {
                     self?.hud.hide()

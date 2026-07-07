@@ -35,6 +35,10 @@ public final class AudioRecorder {
 
     public private(set) var isRecording = false
 
+    /// Called on the main queue with a 0–1 loudness value per captured chunk
+    /// (~10–20 Hz) while recording. Drives the HUD waveform.
+    public var onLevel: ((Float) -> Void)?
+
     public init() {}
 
     public func start() throws {
@@ -107,6 +111,10 @@ public final class AudioRecorder {
         if conversionError == nil, out.frameLength > 0, let channel = out.floatChannelData {
             let chunk = Array(UnsafeBufferPointer(start: channel[0], count: Int(out.frameLength)))
             sampleQueue.async { self.samples.append(contentsOf: chunk) }
+            if let onLevel {
+                let level = AudioLevel.normalize(rms: AudioLevel.rms(of: chunk))
+                DispatchQueue.main.async { onLevel(level) }
+            }
         }
     }
 }

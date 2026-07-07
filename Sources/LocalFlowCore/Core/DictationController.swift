@@ -39,9 +39,14 @@ public final class DictationController: ObservableObject {
     private let whisperQueue = DispatchQueue(label: "com.localflow.whisper", qos: .userInitiated)
 
     public var onStateChange: ((DictationState) -> Void)?
+    /// 0–1 mic loudness while recording, on the main queue (~10–20 Hz).
+    public var onAudioLevel: ((Float) -> Void)?
 
     public init(settings: Settings) {
         self.settings = settings
+        recorder.onLevel = { [weak self] level in
+            self?.onAudioLevel?(level)
+        }
     }
 
     // MARK: Lifecycle
