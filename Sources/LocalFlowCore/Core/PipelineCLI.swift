@@ -77,7 +77,7 @@ public enum PipelineCLI {
                     print("CLEANED: \(outcome.text)")
                 }
             } else if cleanup {
-                print("(≤\(CleanupGate.minimumLength) chars — cleanup skipped by gate)")
+                print("(cleanup skipped by gate — short transcript or already clean)")
             }
             return 0
         } catch {

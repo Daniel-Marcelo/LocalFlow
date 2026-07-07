@@ -49,7 +49,7 @@ struct SettingsView: View {
                         Text(ollamaStatus).font(.callout).foregroundStyle(.secondary)
                     }
                 }
-                Text("Transcripts up to \(CleanupGate.minimumLength) characters skip cleanup for lower latency. If Ollama is unreachable, the raw transcript is injected instead.")
+                Text("For lower latency, cleanup is skipped for transcripts up to \(CleanupGate.minimumLength) characters and for ones that already read clean (no filler words, proper punctuation). If Ollama is unreachable, the raw transcript is injected instead.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }

@@ -69,15 +69,17 @@ Settings (menu-bar icon → Settings…):
 | --- | --- |
 | Activation key | Right/Left ⌥, Right ⌘, Right ⌃, F13–F15 |
 | Mode | Hold-to-talk, or press-to-toggle |
-| Whisper model | `base.en` (fastest) · `small.en` (default) · `large-v3-turbo` (most accurate) |
+| Whisper model | `base.en` (fastest) · `small.en` (default) · `large-v3-turbo` (most accurate), each also as a smaller/faster quantized variant |
 | LLM cleanup | On/off, Ollama model name, connection test |
 | Injection | Paste (default) or type |
 | Feedback | HUD on/off, sound cues on/off |
 
-Dictations of ≤ 50 characters skip LLM cleanup entirely for minimal latency.
-If Ollama is unreachable, times out, or errors, the raw Whisper transcript is
-injected and a ⚠️ warning shows in the menu — dictation never blocks on the
-LLM.
+To keep latency down, LLM cleanup is skipped when it wouldn't help:
+dictations of ≤ 50 characters, and transcripts that already read clean (no
+filler words or stutters, proper capitalization and punctuation) are injected
+directly. If Ollama is unreachable, times out, or errors, the raw Whisper
+transcript is injected and a ⚠️ warning shows in the menu — dictation never
+blocks on the LLM.
 
 ## Development notes
 

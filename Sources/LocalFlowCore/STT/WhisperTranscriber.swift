@@ -41,6 +41,8 @@ public final class WhisperTranscriber {
         unload()
         var params = whisper_context_default_params()
         params.use_gpu = true
+        // Flash attention: measurably faster on Metal with identical output.
+        params.flash_attn = true
         let path = model.localURL.path
         guard let context = whisper_init_from_file_with_params(path, params) else {
             throw WhisperError.modelLoadFailed(path)
