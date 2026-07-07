@@ -1,3 +1,6 @@
-import whisper
+import Foundation
+import LocalFlowCore
 
-print(String(cString: whisper_print_system_info()))
+MainActor.assumeIsolated {
+    AppMain.run()
+}
