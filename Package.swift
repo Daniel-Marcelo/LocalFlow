@@ -1,4 +1,4 @@
-// swift-tools-version:5.10
+// swift-tools-version:6.1
 
 import PackageDescription
 
@@ -15,17 +15,25 @@ let package = Package(
         .package(path: "Vendor/whisper.cpp")
     ],
     targets: [
-        .executableTarget(
-            name: "LocalFlow",
+        .target(
+            name: "LocalFlowCore",
             dependencies: [
                 .product(name: "whisper", package: "whisper.cpp")
             ],
-            path: "Sources/LocalFlow"
+            path: "Sources/LocalFlowCore",
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
+        .executableTarget(
+            name: "LocalFlow",
+            dependencies: ["LocalFlowCore"],
+            path: "Sources/LocalFlowApp",
+            swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .testTarget(
             name: "LocalFlowTests",
-            dependencies: ["LocalFlow"],
-            path: "Tests/LocalFlowTests"
+            dependencies: ["LocalFlowCore"],
+            path: "Tests/LocalFlowTests",
+            swiftSettings: [.swiftLanguageMode(.v5)]
         ),
     ]
 )
