@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleExecutable</key>
+	<string>LocalFlow</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.localflow.app</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>LocalFlow</string>
+	<key>CFBundleDisplayName</key>
+	<string>LocalFlow</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>LocalFlow records your voice while you hold the dictation key, transcribes it entirely on this Mac, and never sends audio anywhere.</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Runs fully offline. No audio or text leaves this machine.</string>
+</dict>
+</plist>

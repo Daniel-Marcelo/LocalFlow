@@ -27,9 +27,14 @@ public enum AudioFileLoader {
             var status: AVAudioConverterOutputStatus = .haveData
             var conversionError: NSError?
             status = converter.convert(to: out, error: &conversionError) { _, outStatus in
-                guard let inBuffer = AVAudioPCMBuffer(
-                    pcmFormat: sourceFormat, frameCapacity: sourceCapacity
-                ) else {
+                // AVAudioFile.read(into:) throws a spurious error when called
+                // at EOF (rather than returning an empty buffer), so check the
+                // position explicitly.
+                guard file.framePosition < file.length,
+                      let inBuffer = AVAudioPCMBuffer(
+                          pcmFormat: sourceFormat, frameCapacity: sourceCapacity
+                      )
+                else {
                     outStatus.pointee = .endOfStream
                     return nil
                 }

@@ -40,7 +40,7 @@ struct SettingsView: View {
 
             Section("LLM cleanup (Ollama)") {
                 Toggle("Clean up transcripts with a local LLM", isOn: binding(\.cleanupEnabled))
-                TextField("Ollama model", text: binding(\.ollamaModel))
+                TextField("Ollama model", text: binding(\.ollamaModel, restartsPipeline: false))
                     .disabled(!settings.cleanupEnabled)
                 HStack {
                     Button("Test Ollama connection") { testOllama() }
@@ -55,13 +55,13 @@ struct SettingsView: View {
             }
 
             Section("Output") {
-                Picker("Injection method", selection: binding(\.injectionMethod)) {
+                Picker("Injection method", selection: binding(\.injectionMethod, restartsPipeline: false)) {
                     ForEach(InjectionMethod.allCases) { method in
                         Text(method.displayName).tag(method)
                     }
                 }
-                Toggle("Show HUD while dictating", isOn: binding(\.hudEnabled))
-                Toggle("Play start/stop sounds", isOn: binding(\.soundCuesEnabled))
+                Toggle("Show HUD while dictating", isOn: binding(\.hudEnabled, restartsPipeline: false))
+                Toggle("Play start/stop sounds", isOn: binding(\.soundCuesEnabled, restartsPipeline: false))
             }
 
             Section("Permissions") {
@@ -168,14 +168,22 @@ struct SettingsView: View {
     }
 
     /// Builds a SwiftUI binding onto a Settings computed property; the
-    /// changeCounter publish makes the view refresh, and controller.start()
-    /// re-wires the hotkey when activation settings change.
-    private func binding<Value>(_ keyPath: ReferenceWritableKeyPath<Settings, Value>) -> Binding<Value> {
+    /// changeCounter publish makes the view refresh. Pipeline-affecting
+    /// settings restart the controller (re-wiring the hotkey, preloading the
+    /// model, warming Ollama); cosmetic ones don't — notably the Ollama model
+    /// text field, which would otherwise tear down the event tap on every
+    /// keystroke.
+    private func binding<Value>(
+        _ keyPath: ReferenceWritableKeyPath<Settings, Value>,
+        restartsPipeline: Bool = true
+    ) -> Binding<Value> {
         Binding(
             get: { settings[keyPath: keyPath] },
             set: { newValue in
                 settings[keyPath: keyPath] = newValue
-                controller.start()
+                if restartsPipeline {
+                    controller.start()
+                }
             }
         )
     }

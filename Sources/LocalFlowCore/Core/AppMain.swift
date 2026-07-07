@@ -6,14 +6,12 @@ public enum AppMain {
     public static func run() {
         let arguments = Array(CommandLine.arguments.dropFirst())
         if arguments.contains("--transcribe") || arguments.contains("--help") {
-            let semaphore = DispatchSemaphore(value: 0)
-            var exitCode: Int32 = 0
-            Task {
-                exitCode = await PipelineCLI.run(arguments: arguments)
-                semaphore.signal()
+            // dispatchMain() (not a semaphore) keeps the main queue serviced
+            // so MainActor hops inside the pipeline can run.
+            Task.detached {
+                exit(await PipelineCLI.run(arguments: arguments))
             }
-            semaphore.wait()
-            exit(exitCode)
+            dispatchMain()
         }
 
         let app = NSApplication.shared

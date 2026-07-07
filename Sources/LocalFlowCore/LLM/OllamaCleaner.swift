@@ -5,9 +5,11 @@ public struct OllamaConfig {
     public var baseURL = URL(string: "http://localhost:11434")!
     public var model = "gemma3:4b"
     /// Seconds before the cleanup request is abandoned in favor of the raw
-    /// transcript. Generous enough for a warm model, short enough that
-    /// dictation never feels hung.
-    public var timeout: TimeInterval = 8
+    /// transcript. A dead Ollama fails instantly (connection refused); this
+    /// only bites when the daemon is up but slow, so it's sized for a cold
+    /// gemma3:4b load rather than for snappiness — the app's launch warm-up
+    /// keeps the common case fast.
+    public var timeout: TimeInterval = 15
 
     public init() {}
 }
