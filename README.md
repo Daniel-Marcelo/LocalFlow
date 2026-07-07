@@ -22,8 +22,10 @@ Requires macOS 14+ on Apple Silicon.
 
 ## Build
 
-Needs only the Xcode **Command Line Tools** (`xcode-select --install`);
-full Xcode also works.
+Needs only the Xcode **Command Line Tools** (`xcode-select --install`).
+With full Xcode installed (plus its Metal toolchain:
+`xcodebuild -downloadComponent MetalToolchain`) the build additionally
+precompiles the GPU shaders, which dev/CLI runs load directly.
 
 ```sh
 make app        # fetches whisper.cpp v1.7.2, builds, assembles LocalFlow.app
@@ -84,18 +86,25 @@ LLM.
   whisper.cpp is pinned at **v1.7.2** — the last tag with a SwiftPM manifest
   (Metal enabled) — vendored by `scripts/fetch-whisper.sh` as a local path
   dependency (required because its manifest uses `unsafeFlags`).
-- **Metal**: pure-SwiftPM builds can't compile `.metal` files, so ggml
-  JIT-compiles the shader source at startup. The fetch script generates a
-  self-contained `ggml-metal.metal` (with `ggml-common.h` inlined) that the
-  Makefile ships in the app's Resources. If it's missing, whisper silently
-  falls back to CPU — still fast, just slower.
+- **Metal**: pure-SwiftPM builds can't compile `.metal` files, and whisper's
+  SwiftPM resource lookup can't find its bundle from inside a packaged .app,
+  so LocalFlow handles shaders itself. The fetch script generates a
+  self-contained `ggml-metal.metal` (with `ggml-common.h` inlined). The app
+  ships it in Resources and points `GGML_METAL_PATH_RESOURCES` there at
+  startup, so ggml JIT-compiles it once during model preload. When the Metal
+  toolchain is available, `make build` also precompiles `default.metallib`
+  into the SwiftPM resource bundle, which dev/CLI runs load directly with no
+  JIT. If neither resource exists, whisper silently falls back to CPU — still
+  fast, just slower (watch for `ggml_metal_init: error` on stderr).
 - **Headless pipeline testing** (no permissions needed):
 
   ```sh
-  GGML_METAL_PATH_RESOURCES=Vendor/metal-resources \
-    .build/release/LocalFlow --transcribe speech.aiff \
+  .build/release/LocalFlow --transcribe speech.aiff \
     [--model base.en] [--no-cleanup] [--ollama-model gemma3:4b]
   ```
+
+  (If built without the Metal toolchain, prefix with
+  `GGML_METAL_PATH_RESOURCES=Vendor/metal-resources` to get GPU inference.)
 
   Handy with `say -o speech.aiff "some test sentence"`.
 - **Tests**: `make test` (wraps `swift test` with the framework/plugin paths

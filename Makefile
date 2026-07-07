@@ -24,6 +24,18 @@ fetch:
 
 build: fetch
 	swift build -c $(CONFIG)
+	# With full Xcode (+ Metal toolchain: xcodebuild -downloadComponent
+	# MetalToolchain), precompile the shaders into the SwiftPM resource
+	# bundle so dev/CLI runs skip the runtime JIT compile. Optional — without
+	# it ggml JIT-compiles the shipped shader source instead.
+	@if xcrun metal --version >/dev/null 2>&1; then \
+		xcrun metal -O2 -Wno-unused-const-variable \
+			-o .build/$(CONFIG)/whisper_whisper.bundle/default.metallib \
+			Vendor/metal-resources/ggml-metal.metal && \
+		echo "Precompiled Metal shaders into whisper_whisper.bundle"; \
+	else \
+		echo "Metal toolchain not available — shaders will be JIT-compiled at runtime"; \
+	fi
 
 test: fetch
 	./scripts/test.sh
