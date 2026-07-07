@@ -1,0 +1,6 @@
+.build/
+.swiftpm/
+Vendor/
+LocalFlow.app/
+*.bin
+.DS_Store
