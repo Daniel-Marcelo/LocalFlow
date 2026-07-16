@@ -91,6 +91,21 @@ public final class Settings: ObservableObject {
         set { set(newValue, forKey: "hudEnabled") }
     }
 
+    public var hudSize: HUDSize {
+        get { rawString("hudSize").flatMap(HUDSize.init(rawValue:)) ?? .standard }
+        set { set(newValue.rawValue, forKey: "hudSize") }
+    }
+
+    public var hudStyle: HUDStyle {
+        get { rawString("hudStyle").flatMap(HUDStyle.init(rawValue:)) ?? .system }
+        set { set(newValue.rawValue, forKey: "hudStyle") }
+    }
+
+    public var hudBehavior: HUDBehavior {
+        get { rawString("hudBehavior").flatMap(HUDBehavior.init(rawValue:)) ?? .fullPipeline }
+        set { set(newValue.rawValue, forKey: "hudBehavior") }
+    }
+
     public var soundCuesEnabled: Bool {
         get { bool("soundCuesEnabled", default: true) }
         set { set(newValue, forKey: "soundCuesEnabled") }

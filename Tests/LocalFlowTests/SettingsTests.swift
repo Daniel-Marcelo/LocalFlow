@@ -21,6 +21,9 @@ private func freshDefaults(_ name: String) -> UserDefaults {
         #expect(settings.injectionMethod == .paste)
         #expect(settings.hudEnabled)
         #expect(settings.soundCuesEnabled)
+        #expect(settings.hudSize == .standard)
+        #expect(settings.hudStyle == .system)
+        #expect(settings.hudBehavior == .fullPipeline)
     }
 
     @Test func valuesPersistAcrossInstances() {
@@ -34,6 +37,9 @@ private func freshDefaults(_ name: String) -> UserDefaults {
         settings.injectionMethod = .type
         settings.hudEnabled = false
         settings.soundCuesEnabled = false
+        settings.hudSize = .large
+        settings.hudStyle = .vibrant
+        settings.hudBehavior = .recordingOnly
 
         let reloaded = Settings(defaults: defaults)
         #expect(reloaded.hotkey == .f13)
@@ -44,6 +50,9 @@ private func freshDefaults(_ name: String) -> UserDefaults {
         #expect(reloaded.injectionMethod == .type)
         #expect(!reloaded.hudEnabled)
         #expect(!reloaded.soundCuesEnabled)
+        #expect(reloaded.hudSize == .large)
+        #expect(reloaded.hudStyle == .vibrant)
+        #expect(reloaded.hudBehavior == .recordingOnly)
     }
 
     @Test func garbageStoredValuesFallBackToDefaults() {
