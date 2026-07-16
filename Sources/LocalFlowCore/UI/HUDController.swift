@@ -3,9 +3,10 @@ import SwiftUI
 
 /// A small non-activating floating panel near the bottom of the screen that
 /// mirrors the pipeline state. While listening it renders a live waveform
-/// driven by microphone levels; transcribing shows a traveling wave;
-/// cleaning shows a shimmering sparkle. Never steals focus from the app
-/// being dictated into.
+/// driven by microphone levels; transcribing shows a traveling wave; cleaning
+/// shows a shimmering sparkle. Size and style come from a `HUDAppearance`
+/// passed in on each `show`. Never steals focus from the app being dictated
+/// into.
 @MainActor
 public final class HUDController {
     private var panel: NSPanel?
@@ -13,12 +14,14 @@ public final class HUDController {
 
     public init() {}
 
-    public func show(state: DictationState) {
+    public func show(state: DictationState, appearance: HUDAppearance) {
+        model.appearance = appearance
         model.state = state
         if case .recording = state {
             model.resetLevels()
         }
         let panel = ensurePanel()
+        panel.setContentSize(appearance.size.panelSize)
         position(panel)
         panel.orderFrontRegardless()
     }
@@ -33,8 +36,9 @@ public final class HUDController {
 
     private func ensurePanel() -> NSPanel {
         if let panel { return panel }
+        let initialSize = HUDSize.standard.panelSize
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: HUDView.size.width, height: HUDView.size.height),
+            contentRect: NSRect(x: 0, y: 0, width: initialSize.width, height: initialSize.height),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -62,14 +66,16 @@ public final class HUDController {
     }
 }
 
-/// Observable state behind the HUD: pipeline stage plus a rolling window of
-/// recent mic levels that the listening waveform scrolls through.
+/// Observable state behind the HUD: pipeline stage, a rolling window of recent
+/// mic levels that the listening waveform scrolls through, and the resolved
+/// appearance (size + style).
 @MainActor
 final class HUDModel: ObservableObject {
     static let barCount = 21
 
     @Published var state: DictationState = .idle
     @Published var levels: [Float] = Array(repeating: 0, count: HUDModel.barCount)
+    @Published var appearance = HUDAppearance(size: .standard, style: .system)
 
     func pushLevel(_ level: Float) {
         levels.removeFirst()
@@ -82,25 +88,34 @@ final class HUDModel: ObservableObject {
 }
 
 struct HUDView: View {
-    static let size = CGSize(width: 230, height: 52)
-
     @ObservedObject var model: HUDModel
 
+    private var size: CGSize { model.appearance.size.panelSize }
+    private var scale: CGFloat { model.appearance.size.scale }
+    private var spec: HUDStyleSpec { model.appearance.style.spec }
+
     var body: some View {
-        HStack(spacing: 10) {
-            visual
-                .frame(width: 110, height: 26)
-            Text(label)
-                .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        HStack(spacing: 10 * scale) {
+            if spec.showLabel {
+                visual
+                    .frame(width: 110 * scale, height: 26 * scale)
+                Text(label)
+                    .font(.system(size: 12 * scale, weight: .medium, design: .rounded))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                visual
+                    .frame(height: 26 * scale)
+                    .frame(maxWidth: .infinity)
+            }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .frame(width: Self.size.width, height: Self.size.height)
+        .padding(.horizontal, 14 * scale)
+        .padding(.vertical, 10 * scale)
+        .frame(width: size.width, height: size.height)
         .background(.ultraThinMaterial, in: Capsule())
         .overlay(Capsule().strokeBorder(.white.opacity(0.12)))
+        .opacity(spec.backgroundOpacity)
     }
 
     private var label: String {
@@ -117,18 +132,18 @@ struct HUDView: View {
     private var visual: some View {
         switch model.state {
         case .recording:
-            LiveWaveform(levels: model.levels, tint: .red)
+            LiveWaveform(levels: model.levels, tint: spec.recordingTint)
         case .transcribing:
-            TravelingWave(tint: .cyan)
+            TravelingWave(tint: spec.transcribingTint)
         case .cleaning:
             Image(systemName: "sparkles")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(.purple)
+                .font(.system(size: 18 * scale, weight: .semibold))
+                .foregroundStyle(spec.cleaningTint)
                 .symbolEffect(.variableColor.iterative, options: .repeating)
                 .frame(maxWidth: .infinity)
         case .error:
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 17, weight: .semibold))
+                .font(.system(size: 17 * scale, weight: .semibold))
                 .foregroundStyle(.orange)
                 .frame(maxWidth: .infinity)
         case .idle:

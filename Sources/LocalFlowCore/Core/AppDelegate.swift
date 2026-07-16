@@ -70,17 +70,13 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func updateHUD(for state: DictationState) {
-        guard settings.hudEnabled else {
+        guard settings.hudEnabled, settings.hudBehavior.shouldShow(state: state) else {
             hud.hide()
             return
         }
-        switch state {
-        case .idle:
-            hud.hide()
-        case .recording, .transcribing, .cleaning:
-            hud.show(state: state)
-        case .error:
-            hud.show(state: state)
+        let appearance = HUDAppearance(size: settings.hudSize, style: settings.hudStyle)
+        hud.show(state: state, appearance: appearance)
+        if case .error = state {
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
                 if case .idle = self?.controller.state ?? .idle {
                     self?.hud.hide()
