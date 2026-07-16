@@ -60,8 +60,33 @@ struct SettingsView: View {
                         Text(method.displayName).tag(method)
                     }
                 }
-                Toggle("Show HUD while dictating", isOn: binding(\.hudEnabled, restartsPipeline: false))
                 Toggle("Play start/stop sounds", isOn: binding(\.soundCuesEnabled, restartsPipeline: false))
+            }
+
+            Section("HUD") {
+                Toggle("Show HUD while dictating", isOn: binding(\.hudEnabled, restartsPipeline: false))
+                Picker("Size", selection: binding(\.hudSize, restartsPipeline: false)) {
+                    ForEach(HUDSize.allCases) { size in
+                        Text(size.displayName).tag(size)
+                    }
+                }
+                .disabled(!settings.hudEnabled)
+                Picker("Style", selection: binding(\.hudStyle, restartsPipeline: false)) {
+                    ForEach(HUDStyle.allCases) { style in
+                        Text(style.displayName).tag(style)
+                    }
+                }
+                .disabled(!settings.hudEnabled)
+                Picker("Visibility", selection: binding(\.hudBehavior, restartsPipeline: false)) {
+                    ForEach(HUDBehavior.allCases) { behavior in
+                        Text(behavior.displayName).tag(behavior)
+                    }
+                }
+                .disabled(!settings.hudEnabled)
+                HUDPreview(size: settings.hudSize, style: settings.hudStyle)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 6)
+                    .opacity(settings.hudEnabled ? 1 : 0.35)
             }
 
             Section("Permissions") {
@@ -186,5 +211,33 @@ struct SettingsView: View {
                 }
             }
         )
+    }
+}
+
+/// A live, non-interactive preview of the HUD in its listening state, rendered
+/// with the real `HUDView` so it exactly matches what appears while dictating.
+/// The `.id` forces a rebuild (and a fresh model) whenever the presets change.
+private struct HUDPreview: View {
+    let size: HUDSize
+    let style: HUDStyle
+
+    var body: some View {
+        HUDView(model: previewModel)
+            .id("\(size.rawValue)-\(style.rawValue)")
+    }
+
+    private var previewModel: HUDModel {
+        let model = HUDModel()
+        model.state = .recording
+        model.appearance = HUDAppearance(size: size, style: style)
+        model.levels = HUDPreview.sampleLevels
+        return model
+    }
+
+    /// A fixed, symmetric hump so the preview waveform is stable and readable.
+    /// Sized to `HUDModel.barCount` so it always fills the waveform.
+    private static let sampleLevels: [Float] = (0..<HUDModel.barCount).map { index in
+        let t = Float(index) / Float(HUDModel.barCount - 1)  // 0...1
+        return 0.25 + 0.6 * (1 - abs(2 * t - 1))             // low → high → low
     }
 }
