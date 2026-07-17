@@ -62,7 +62,7 @@ public final class WhisperTranscriber {
 
     /// Transcribes a 16 kHz mono Float32 buffer. Returns the raw Whisper text
     /// (unsanitized). Returns "" for buffers too short to be real speech.
-    public func transcribe(samples: [Float]) throws -> String {
+    public func transcribe(samples: [Float], initialPrompt: String = "") throws -> String {
         guard let context else { throw WhisperError.notLoaded }
 
         let seconds = Double(samples.count) / AudioRecorder.sampleRate
@@ -85,10 +85,24 @@ public final class WhisperTranscriber {
         params.n_threads = Int32(max(2, min(8, ProcessInfo.processInfo.activeProcessorCount - 2)))
 
         let start = Date()
-        let status: Int32 = "en".withCString { english in
-            params.language = english
-            return padded.withUnsafeBufferPointer { buffer in
-                whisper_full(context, params, buffer.baseAddress, Int32(buffer.count))
+        func run(_ params: whisper_full_params) -> Int32 {
+            var params = params
+            return "en".withCString { english in
+                params.language = english
+                return padded.withUnsafeBufferPointer { buffer in
+                    whisper_full(context, params, buffer.baseAddress, Int32(buffer.count))
+                }
+            }
+        }
+
+        let status: Int32
+        if initialPrompt.isEmpty {
+            status = run(params)
+        } else {
+            status = initialPrompt.withCString { prompt in
+                var params = params
+                params.initial_prompt = prompt
+                return run(params)
             }
         }
         guard status == 0 else { throw WhisperError.transcriptionFailed(status) }
