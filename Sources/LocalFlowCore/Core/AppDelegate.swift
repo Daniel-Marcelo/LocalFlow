@@ -75,13 +75,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         let appearance = HUDAppearance(size: settings.hudSize, style: settings.hudStyle)
+        // The error HUD is dismissed when the controller resets the state to
+        // idle (DictationController.scheduleErrorReset → updateHUD(.idle) →
+        // hide), so no separate timer is needed here.
         hud.show(state: state, appearance: appearance)
-        if case .error = state {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
-                if case .idle = self?.controller.state ?? .idle {
-                    self?.hud.hide()
-                }
-            }
-        }
     }
 }

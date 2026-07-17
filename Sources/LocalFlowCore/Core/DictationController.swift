@@ -101,8 +101,15 @@ public final class DictationController: ObservableObject {
             return
         }
         guard settings.whisperModel.isDownloaded else {
-            setState(.error("Whisper model not downloaded — open Settings"))
-            Task { try? await ensureModelReady() }
+            // Don't kick off another download if one is already running — just
+            // tell the user to wait. (Concurrent calls are coalesced by
+            // ModelManager, but repeating the error every keypress is noise.)
+            if case .downloading = modelManager.state {
+                setState(.error("Downloading model… try again in a moment"))
+            } else {
+                setState(.error("Whisper model not downloaded — open Settings"))
+                Task { try? await ensureModelReady() }
+            }
             return
         }
         do {
@@ -157,8 +164,8 @@ public final class DictationController: ObservableObject {
                 )
             } catch {
                 Task { @MainActor [weak self] in
+                    // setState(.error:) already schedules the reset to idle.
                     self?.setState(.error(error.localizedDescription))
-                    self?.scheduleErrorReset()
                 }
                 return
             }
@@ -181,6 +188,11 @@ public final class DictationController: ObservableObject {
         ollamaConfig: OllamaConfig,
         injectionMethod: InjectionMethod
     ) async {
+        // Clear any stale fallback warning from a previous dictation; it's only
+        // re-set below if *this* run actually falls back. Otherwise a one-off
+        // Ollama hiccup would leave the ⚠️ badge up through every later
+        // short/clean/empty dictation that skips the cleanup stage.
+        warning = nil
         guard !transcript.isEmpty else {
             log.info("Empty transcript; nothing to inject")
             setState(.idle)
@@ -192,9 +204,9 @@ public final class DictationController: ObservableObject {
             setState(.cleaning)
             let outcome = await OllamaCleaner.clean(transcript: transcript, config: ollamaConfig)
             finalText = outcome.text
-            warning = outcome.fellBack
-                ? "LLM cleanup unavailable (\(outcome.fallbackReason ?? "unknown")) — injected raw transcript"
-                : nil
+            if outcome.fellBack {
+                warning = "LLM cleanup unavailable (\(outcome.fallbackReason ?? "unknown")) — injected raw transcript"
+            }
         }
 
         TextInjector.inject(finalText, method: injectionMethod)

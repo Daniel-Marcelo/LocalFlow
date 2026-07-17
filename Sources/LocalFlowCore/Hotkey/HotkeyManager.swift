@@ -6,8 +6,9 @@ import os.log
 /// configured activation key into activate/deactivate callbacks.
 ///
 /// Bare modifiers (the Right Option default) only produce `flagsChanged`
-/// events, so press vs. release is derived from whether the key's modifier
-/// flag is set. Function keys produce ordinary keyDown/keyUp.
+/// events, so press vs. release is derived from the key's device-specific
+/// modifier bit (which distinguishes left from right). Function keys produce
+/// ordinary keyDown/keyUp.
 ///
 /// Requires Accessibility permission; `start()` returns false without it.
 public final class HotkeyManager {
@@ -91,9 +92,11 @@ public final class HotkeyManager {
         guard keyCode == hotkey.keyCode else { return }
 
         if hotkey.isModifierKey {
-            guard type == .flagsChanged, let flag = hotkey.modifierFlag else { return }
-            let pressed = event.flags.contains(flag)
-            transition(pressed: pressed)
+            guard type == .flagsChanged else { return }
+            // Use the device-specific bit, not the shared .maskAlternate mask,
+            // so releasing Right Option while Left Option is held still fires a
+            // deactivate instead of getting stuck "listening".
+            transition(pressed: hotkey.isPressed(rawFlags: event.flags.rawValue))
         } else {
             switch type {
             case .keyDown:

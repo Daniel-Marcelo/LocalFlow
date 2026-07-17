@@ -73,11 +73,7 @@ public enum TextInjector {
     /// some apps drop characters from long single events.
     private static func type(_ text: String) {
         let source = CGEventSource(stateID: .combinedSessionState)
-        let chunkSize = 20
-        var units = Array(text.utf16)
-        while !units.isEmpty {
-            var chunk = Array(units.prefix(chunkSize))
-            units.removeFirst(chunk.count)
+        for var chunk in utf16Chunks(text, size: 20) {
             if let down = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true) {
                 down.keyboardSetUnicodeString(stringLength: chunk.count, unicodeString: &chunk)
                 down.post(tap: .cghidEventTap)
@@ -87,6 +83,28 @@ public enum TextInjector {
             }
             usleep(8_000)
         }
+    }
+
+    /// Splits a string's UTF-16 units into chunks of at most `size`, without
+    /// ever splitting a surrogate pair across a boundary (which would corrupt
+    /// emoji and other non-BMP characters). A chunk is shortened by one unit
+    /// when it would otherwise end on a high surrogate.
+    static func utf16Chunks(_ text: String, size: Int) -> [[UInt16]] {
+        precondition(size >= 2, "chunk size must fit a surrogate pair")
+        let units = Array(text.utf16)
+        var chunks: [[UInt16]] = []
+        var index = 0
+        while index < units.count {
+            var end = min(index + size, units.count)
+            // Don't strand a low surrogate: if the boundary lands right after a
+            // high surrogate, push it back so the pair stays together.
+            if end < units.count, (0xD800...0xDBFF).contains(units[end - 1]) {
+                end -= 1
+            }
+            chunks.append(Array(units[index..<end]))
+            index = end
+        }
+        return chunks
     }
 
     // MARK: Keystroke synthesis
