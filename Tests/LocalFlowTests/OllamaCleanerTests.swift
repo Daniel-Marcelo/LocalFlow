@@ -40,6 +40,27 @@ import Testing
         #expect(request.timeoutInterval == 5)
     }
 
+    @Test func requestOmitsPreserveLineWhenListEmpty() throws {
+        let request = try OllamaCleaner.makeRequest(
+            transcript: "hello", config: OllamaConfig(), preserveList: ""
+        )
+        let httpBody = try #require(request.httpBody)
+        let body = try #require(try JSONSerialization.jsonObject(with: httpBody) as? [String: Any])
+        let prompt = try #require(body["prompt"] as? String)
+        #expect(!prompt.lowercased().contains("preserve these terms"))
+    }
+
+    @Test func requestIncludesPreserveLineWhenListProvided() throws {
+        let request = try OllamaCleaner.makeRequest(
+            transcript: "hello", config: OllamaConfig(), preserveList: "Claude Code, Kubernetes"
+        )
+        let httpBody = try #require(request.httpBody)
+        let body = try #require(try JSONSerialization.jsonObject(with: httpBody) as? [String: Any])
+        let prompt = try #require(body["prompt"] as? String)
+        #expect(prompt.contains("Preserve these terms exactly as written"))
+        #expect(prompt.contains("Claude Code, Kubernetes"))
+    }
+
     // MARK: Response parsing
 
     @Test func parsesResponseField() throws {

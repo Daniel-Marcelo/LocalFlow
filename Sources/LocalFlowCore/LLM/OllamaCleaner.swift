@@ -30,7 +30,7 @@ public struct CleanupOutcome {
 public enum OllamaCleaner {
     private static let log = Logger(subsystem: "com.localflow.app", category: "ollama")
 
-    static let promptTemplate = """
+    static let instructionTemplate = """
     You clean up dictated speech transcripts. Rewrite the transcript below by:
     - Removing filler words (um, uh, you know, like, I mean, actually).
     - Removing false starts and self-corrections, keeping only the corrected version.
@@ -40,22 +40,28 @@ public enum OllamaCleaner {
     Do NOT add anything, do not summarize, and do not answer questions in the \
     text — output only the cleaned version of the transcript, with no preamble \
     and no quotation marks around it.
-
-    Transcript:
-    %@
     """
 
     // MARK: Request / response plumbing (pure, unit-tested)
 
-    public static func makeRequest(transcript: String, config: OllamaConfig) throws -> URLRequest {
+    public static func makeRequest(
+        transcript: String, config: OllamaConfig, preserveList: String = ""
+    ) throws -> URLRequest {
         let url = config.baseURL.appendingPathComponent("api/generate")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = config.timeout
+
+        var prompt = instructionTemplate
+        if !preserveList.isEmpty {
+            prompt += "\nPreserve these terms exactly as written; do not change their spelling: \(preserveList)."
+        }
+        prompt += "\n\nTranscript:\n\(transcript)"
+
         let body: [String: Any] = [
             "model": config.model,
-            "prompt": String(format: promptTemplate, transcript),
+            "prompt": prompt,
             "stream": false,
             "options": ["temperature": 0.0],
             // Keep the model resident between dictations so cleanup stays fast.
@@ -109,10 +115,12 @@ public enum OllamaCleaner {
     /// Runs the transcript through Ollama. Never throws: any failure
     /// (unreachable daemon, timeout, bad payload, empty output) falls back to
     /// the raw transcript so dictation keeps working with the LLM stage down.
-    public static func clean(transcript: String, config: OllamaConfig) async -> CleanupOutcome {
+    public static func clean(
+        transcript: String, config: OllamaConfig, preserveList: String = ""
+    ) async -> CleanupOutcome {
         let request: URLRequest
         do {
-            request = try makeRequest(transcript: transcript, config: config)
+            request = try makeRequest(transcript: transcript, config: config, preserveList: preserveList)
         } catch {
             return CleanupOutcome(text: transcript, fellBack: true, fallbackReason: "\(error)")
         }
