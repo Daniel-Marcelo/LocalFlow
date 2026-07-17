@@ -10,6 +10,7 @@ struct SettingsView: View {
     @State private var accessibilityGranted = Permissions.accessibilityGranted
     @State private var micStatusText = ""
     @State private var ollamaStatus: String?
+    @State private var showingVocabularyEditor = false
 
     private let permissionTimer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
 
@@ -36,6 +37,24 @@ struct SettingsView: View {
                     }
                 }
                 modelStatusRow
+            }
+
+            Section("Vocabulary") {
+                Button {
+                    showingVocabularyEditor = true
+                } label: {
+                    HStack {
+                        Text("Custom terms")
+                        Spacer()
+                        Text("\(settings.vocabulary.count) term\(settings.vocabulary.count == 1 ? "" : "s")")
+                            .foregroundStyle(.secondary)
+                        Image(systemName: "chevron.right").foregroundStyle(.tertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+                Text("Terms you dictate that Whisper mishears — proper nouns, jargon, acronyms. Improves recognition and fixes consistent mistakes.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
             }
 
             Section("LLM cleanup (Ollama)") {
@@ -107,6 +126,9 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 480)
         .frame(maxHeight: .infinity)
+        .sheet(isPresented: $showingVocabularyEditor) {
+            VocabularyEditor(settings: settings)
+        }
         .onReceive(permissionTimer) { _ in
             let granted = Permissions.accessibilityGranted
             if granted != accessibilityGranted {
