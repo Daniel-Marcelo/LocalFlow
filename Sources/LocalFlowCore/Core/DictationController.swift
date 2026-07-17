@@ -154,13 +154,15 @@ public final class DictationController: ObservableObject {
         let cleanupEnabled = settings.cleanupEnabled
         let ollamaConfig = settings.ollamaConfig
         let injectionMethod = settings.injectionMethod
+        let vocabulary = Vocabulary(entries: settings.vocabulary)
+        let primingPrompt = vocabulary.primingPrompt
 
         whisperQueue.async { [weak self, transcriber] in
             let transcript: String
             do {
                 try transcriber.load(model: model)
                 transcript = TranscriptSanitizer.sanitize(
-                    try transcriber.transcribe(samples: samples)
+                    try transcriber.transcribe(samples: samples, initialPrompt: primingPrompt)
                 )
             } catch {
                 Task { @MainActor [weak self] in
@@ -176,7 +178,8 @@ public final class DictationController: ObservableObject {
                     transcript: transcript,
                     cleanupEnabled: cleanupEnabled,
                     ollamaConfig: ollamaConfig,
-                    injectionMethod: injectionMethod
+                    injectionMethod: injectionMethod,
+                    vocabulary: vocabulary
                 )
             }
         }
@@ -186,7 +189,8 @@ public final class DictationController: ObservableObject {
         transcript: String,
         cleanupEnabled: Bool,
         ollamaConfig: OllamaConfig,
-        injectionMethod: InjectionMethod
+        injectionMethod: InjectionMethod,
+        vocabulary: Vocabulary
     ) async {
         // Clear any stale fallback warning from a previous dictation; it's only
         // re-set below if *this* run actually falls back. Otherwise a one-off
@@ -202,12 +206,18 @@ public final class DictationController: ObservableObject {
         var finalText = transcript
         if CleanupGate.shouldClean(transcript: transcript, cleanupEnabled: cleanupEnabled) {
             setState(.cleaning)
-            let outcome = await OllamaCleaner.clean(transcript: transcript, config: ollamaConfig)
+            let outcome = await OllamaCleaner.clean(
+                transcript: transcript, config: ollamaConfig, preserveList: vocabulary.preserveList
+            )
             finalText = outcome.text
             if outcome.fellBack {
                 warning = "LLM cleanup unavailable (\(outcome.fallbackReason ?? "unknown")) — injected raw transcript"
             }
         }
+
+        // Deterministic vocabulary fixes run last, on both the cleaned and the
+        // gate-skipped raw path, so known mishearings always come out right.
+        finalText = vocabulary.applyReplacements(finalText)
 
         TextInjector.inject(finalText, method: injectionMethod)
         setState(.idle)
