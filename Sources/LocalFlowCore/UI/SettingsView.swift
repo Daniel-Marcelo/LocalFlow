@@ -106,7 +106,7 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .frame(width: 480)
-        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxHeight: .infinity)
         .onReceive(permissionTimer) { _ in
             let granted = Permissions.accessibilityGranted
             if granted != accessibilityGranted {

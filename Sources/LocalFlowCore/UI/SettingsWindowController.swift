@@ -22,10 +22,20 @@ public final class SettingsWindowController {
                 modelManager: controller.modelManager,
                 controller: controller
             )
-            let window = NSWindow(contentViewController: NSHostingController(rootView: view))
+            let hosting = NSHostingController(rootView: view)
+            // Let the window (not the SwiftUI intrinsic size) drive sizing, so
+            // the grouped form scrolls instead of forcing an ever-taller window.
+            hosting.sizingOptions = []
+            let window = NSWindow(contentViewController: hosting)
             window.title = "LocalFlow Settings"
-            window.styleMask = [.titled, .closable, .miniaturizable]
+            window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
             window.isReleasedWhenClosed = false
+            // Open at a comfortable height that always fits the screen; lock the
+            // width to the form's 480pt and allow vertical resize.
+            let ceiling = (NSScreen.main?.visibleFrame.height ?? 800) - 80
+            window.setContentSize(NSSize(width: 480, height: min(640, ceiling)))
+            window.contentMinSize = NSSize(width: 480, height: 320)
+            window.contentMaxSize = NSSize(width: 480, height: 10_000)
             window.center()
             self.window = window
         }
