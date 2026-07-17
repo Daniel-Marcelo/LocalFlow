@@ -60,7 +60,12 @@ struct VocabularyEditor: View {
         }
         .frame(width: 460, height: 420)
         .onAppear { entries = settings.vocabulary }
-        .onChange(of: entries) { _, newValue in settings.vocabulary = newValue }
+        .onChange(of: entries) { _, newValue in
+            // Skip the redundant write the initial onAppear assignment would
+            // otherwise trigger (and its spurious changeCounter tick).
+            guard newValue != settings.vocabulary else { return }
+            settings.vocabulary = newValue
+        }
     }
 
     private var droppedCount: Int {
