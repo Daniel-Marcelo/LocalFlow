@@ -49,6 +49,9 @@ app: build
 	# Self-contained Metal shader source; ggml JIT-compiles it at startup so
 	# Whisper runs on the GPU (falls back to CPU if missing).
 	cp Vendor/metal-resources/ggml-metal.metal $(APP)/Contents/Resources/
+	@if [ -f Resources/AppIcon.icns ]; then \
+		cp Resources/AppIcon.icns $(APP)/Contents/Resources/AppIcon.icns; \
+	fi
 	codesign --force --sign "$(CODESIGN_IDENTITY)" $(APP)
 	@echo "Built $(APP)"
 
