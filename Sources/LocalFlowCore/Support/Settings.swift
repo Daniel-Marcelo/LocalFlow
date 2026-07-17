@@ -111,6 +111,23 @@ public final class Settings: ObservableObject {
         set { set(newValue, forKey: "soundCuesEnabled") }
     }
 
+    /// Custom vocabulary, stored raw (un-normalized) as JSON. Undecodable data
+    /// falls back to an empty list. Consumed via `Vocabulary(entries:)`.
+    public var vocabulary: [VocabularyEntry] {
+        get {
+            guard
+                let data = defaults.data(forKey: "vocabulary"),
+                let entries = try? JSONDecoder().decode([VocabularyEntry].self, from: data)
+            else { return [] }
+            return entries
+        }
+        set {
+            guard let data = try? JSONEncoder().encode(newValue) else { return }
+            defaults.set(data, forKey: "vocabulary")
+            changeCounter += 1
+        }
+    }
+
     public var ollamaConfig: OllamaConfig {
         var config = OllamaConfig()
         config.model = ollamaModel

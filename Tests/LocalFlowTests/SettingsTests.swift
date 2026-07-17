@@ -63,4 +63,28 @@ private func freshDefaults(_ name: String) -> UserDefaults {
         #expect(settings.hotkey == .rightOption)
         #expect(settings.whisperModel == .smallEN)
     }
+
+    @Test func vocabularyDefaultsToEmpty() {
+        let settings = Settings(defaults: freshDefaults("vocab-empty"))
+        #expect(settings.vocabulary.isEmpty)
+    }
+
+    @Test func vocabularyPersistsAcrossInstances() {
+        let defaults = freshDefaults("vocab-persist")
+        let settings = Settings(defaults: defaults)
+        settings.vocabulary = [
+            VocabularyEntry(term: "Claude Code", variants: ["clod code"]),
+            VocabularyEntry(term: "Kubernetes", variants: []),
+        ]
+        let reloaded = Settings(defaults: defaults)
+        #expect(reloaded.vocabulary == settings.vocabulary)
+        #expect(reloaded.vocabulary.map(\.term) == ["Claude Code", "Kubernetes"])
+    }
+
+    @Test func garbageVocabularyFallsBackToEmpty() {
+        let defaults = freshDefaults("vocab-garbage")
+        defaults.set("not json", forKey: "vocabulary")
+        let settings = Settings(defaults: defaults)
+        #expect(settings.vocabulary.isEmpty)
+    }
 }
