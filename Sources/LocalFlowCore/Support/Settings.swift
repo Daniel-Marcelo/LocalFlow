@@ -66,9 +66,33 @@ public final class Settings: ObservableObject {
         set { set(newValue.rawValue, forKey: "activationMode") }
     }
 
+    public var language: DictationLanguage {
+        get { rawString("language").flatMap(DictationLanguage.init(rawValue:)) ?? .default }
+        set { set(newValue.rawValue, forKey: "language") }
+    }
+
+    public func whisperModel(for language: DictationLanguage) -> WhisperModel {
+        let key = "whisperModel.\(language.rawValue)"
+        if let stored = rawString(key).flatMap(WhisperModel.init(rawValue:)),
+           stored.supportedLanguages.contains(language) {
+            return stored
+        }
+        if language == .english, rawString(key) == nil,
+           let legacy = rawString("whisperModel").flatMap(WhisperModel.init(rawValue:)),
+           legacy.supportedLanguages.contains(.english) {
+            set(legacy.rawValue, forKey: key)
+            return legacy
+        }
+        return .default(for: language)
+    }
+
+    public func setWhisperModel(_ model: WhisperModel, for language: DictationLanguage) {
+        set(model.rawValue, forKey: "whisperModel.\(language.rawValue)")
+    }
+
     public var whisperModel: WhisperModel {
-        get { rawString("whisperModel").flatMap(WhisperModel.init(rawValue:)) ?? .default }
-        set { set(newValue.rawValue, forKey: "whisperModel") }
+        get { whisperModel(for: language) }
+        set { setWhisperModel(newValue, for: language) }
     }
 
     public var cleanupEnabled: Bool {

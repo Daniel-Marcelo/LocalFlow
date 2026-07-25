@@ -87,4 +87,69 @@ private func freshDefaults(_ name: String) -> UserDefaults {
         let settings = Settings(defaults: defaults)
         #expect(settings.vocabulary.isEmpty)
     }
+
+    @Test func languageDefaultsToEnglish() {
+        let settings = Settings(defaults: freshDefaults("lang-default"))
+        #expect(settings.language == .english)
+    }
+
+    @Test func languagePersistsAndRoundTrips() {
+        let defaults = freshDefaults("lang-persist")
+        let settings = Settings(defaults: defaults)
+        settings.language = .portugueseBR
+        let reloaded = Settings(defaults: defaults)
+        #expect(reloaded.language == .portugueseBR)
+    }
+
+    @Test func languageGarbageFallsBackToDefault() {
+        let defaults = freshDefaults("lang-garbage")
+        defaults.set("xx", forKey: "language")
+        let settings = Settings(defaults: defaults)
+        #expect(settings.language == .english)
+    }
+
+    @Test func perLanguageModelIsolation() {
+        let settings = Settings(defaults: freshDefaults("lang-model-iso"))
+        settings.setWhisperModel(.largeV3Turbo, for: .english)
+        settings.setWhisperModel(.small, for: .portugueseBR)
+        #expect(settings.whisperModel(for: .english) == .largeV3Turbo)
+        #expect(settings.whisperModel(for: .portugueseBR) == .small)
+    }
+
+    @Test func whisperModelConvenienceReadsActiveLanguage() {
+        let settings = Settings(defaults: freshDefaults("lang-convenience"))
+        settings.language = .portugueseBR
+        settings.setWhisperModel(.baseQ5, for: .portugueseBR)
+        #expect(settings.whisperModel == .baseQ5)
+    }
+
+    @Test func whisperModelConvenienceWritesActiveLanguage() {
+        let settings = Settings(defaults: freshDefaults("lang-conv-write"))
+        settings.language = .portugueseBR
+        settings.whisperModel = .small
+        #expect(settings.whisperModel(for: .portugueseBR) == .small)
+        #expect(settings.whisperModel(for: .english) == .smallEN)
+    }
+
+    @Test func unsupportedPersistedModelFallsBackToLanguageDefault() {
+        let defaults = freshDefaults("lang-model-unsupported")
+        defaults.set("base.en", forKey: "whisperModel.pt")
+        let settings = Settings(defaults: defaults)
+        #expect(settings.whisperModel(for: .portugueseBR) == .small)
+    }
+
+    @Test func migrationSeedsENFromLegacyFlatKey() {
+        let defaults = freshDefaults("lang-migration")
+        defaults.set("large-v3-turbo", forKey: "whisperModel")
+        let settings = Settings(defaults: defaults)
+        #expect(settings.whisperModel(for: .english) == .largeV3Turbo)
+    }
+
+    @Test func migrationDoesNotOverwriteExistingENKey() {
+        let defaults = freshDefaults("lang-migration-no-overwrite")
+        defaults.set("large-v3-turbo", forKey: "whisperModel")
+        defaults.set("base.en", forKey: "whisperModel.en")
+        let settings = Settings(defaults: defaults)
+        #expect(settings.whisperModel(for: .english) == .baseEN)
+    }
 }
