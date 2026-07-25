@@ -97,4 +97,59 @@ import Testing
     @Test func postProcessStripsWrappingQuotes() {
         #expect(OllamaCleaner.postProcess("\"Hello, world.\"") == "Hello, world.")
     }
+
+    // MARK: Language-aware prompt selection
+
+    @Test func englishInstructionContainsNeverTranslate() {
+        #expect(OllamaCleaner.instructionTemplate(for: .english).lowercased().contains("do not translate"))
+    }
+
+    @Test func portugueseInstructionContainsNeverTranslate() {
+        #expect(OllamaCleaner.instructionTemplate(for: .portugueseBR).lowercased().contains("não traduz"))
+    }
+
+    @Test func requestDefaultsToEnglishInstruction() throws {
+        let request = try OllamaCleaner.makeRequest(transcript: "hello", config: OllamaConfig())
+        let body = try #require(request.httpBody)
+        let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
+        let prompt = try #require(json["prompt"] as? String)
+        #expect(prompt.contains("Removing filler words"))
+        #expect(prompt.contains("Transcript:"))
+        #expect(prompt.lowercased().contains("do not translate"))
+    }
+
+    @Test func requestUsesPortuguesePromptForPTBR() throws {
+        let request = try OllamaCleaner.makeRequest(
+            transcript: "oi tudo bem", config: OllamaConfig(), language: .portugueseBR
+        )
+        let body = try #require(request.httpBody)
+        let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
+        let prompt = try #require(json["prompt"] as? String)
+        #expect(prompt.contains("tipo"))
+        #expect(prompt.contains("né"))
+        #expect(prompt.contains("Transcrição:"))
+        #expect(prompt.contains("oi tudo bem"))
+        #expect(prompt.lowercased().contains("não traduz"))
+    }
+
+    @Test func portuguesePreserveLineIsLocalized() throws {
+        let request = try OllamaCleaner.makeRequest(
+            transcript: "x", config: OllamaConfig(), preserveList: "Kubernetes", language: .portugueseBR
+        )
+        let body = try #require(request.httpBody)
+        let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
+        let prompt = try #require(json["prompt"] as? String)
+        #expect(prompt.contains("Mantenha os seguintes termos"))
+        #expect(prompt.contains("Kubernetes"))
+    }
+
+    @Test func postProcessStripsPTPreamble() {
+        #expect(OllamaCleaner.postProcess("Aqui está o texto corrigido:\nOlá, mundo.") == "Olá, mundo.")
+        #expect(OllamaCleaner.postProcess("Segue a versão corrigida:\nOlá, mundo.") == "Olá, mundo.")
+        #expect(OllamaCleaner.postProcess("Versão corrigida:\nOlá, mundo.") == "Olá, mundo.")
+    }
+
+    @Test func postProcessStillStripsEnglishPreamble() {
+        #expect(OllamaCleaner.postProcess("Here is the cleaned text:\nHello, world.") == "Hello, world.")
+    }
 }

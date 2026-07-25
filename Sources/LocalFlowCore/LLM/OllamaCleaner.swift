@@ -30,22 +30,59 @@ public struct CleanupOutcome {
 public enum OllamaCleaner {
     private static let log = Logger(subsystem: "com.localflow.app", category: "ollama")
 
-    static let instructionTemplate = """
+    private static let englishInstruction = """
     You clean up dictated speech transcripts. Rewrite the transcript below by:
     - Removing filler words (um, uh, you know, like, I mean, actually).
     - Removing false starts and self-corrections, keeping only the corrected version.
     - Fixing grammar, capitalization, and punctuation.
     - Splitting the text into logical paragraphs where appropriate.
 
-    Do NOT add anything, do not summarize, and do not answer questions in the \
-    text — output only the cleaned version of the transcript, with no preamble \
-    and no quotation marks around it.
+    Do NOT add anything, do not summarize, do not answer questions in the \
+    text, and do not translate — keep the input language. Output only the \
+    cleaned version of the transcript, with no preamble and no quotation \
+    marks around it.
     """
+
+    private static let portugueseInstruction = """
+    Você limpa transcrições de fala ditada. Reescreva a transcrição abaixo:
+    - Removendo palavras de preenchimento (é, tipo, né, então, sabe, aí).
+    - Removendo falsos inícios e autocorreções, mantendo apenas a versão corrigida.
+    - Corrigindo gramática, acentuação, maiúsculas e pontuação.
+    - Dividindo o texto em parágrafos lógicos quando fizer sentido.
+
+    NÃO adicione nada, não resuma, não responda perguntas contidas no texto e \
+    não traduza — mantenha o idioma original. Produza apenas a versão limpa da \
+    transcrição, sem preâmbulo e sem aspas ao redor.
+    """
+
+    public static func instructionTemplate(for language: DictationLanguage) -> String {
+        switch language {
+        case .english: return englishInstruction
+        case .portugueseBR: return portugueseInstruction
+        }
+    }
+
+    private static func preserveInstruction(for language: DictationLanguage, terms: String) -> String {
+        switch language {
+        case .english:
+            return "Preserve these terms exactly as written; do not change their spelling: \(terms)."
+        case .portugueseBR:
+            return "Mantenha os seguintes termos exatamente como estão escritos, sem alterar a grafia: \(terms)."
+        }
+    }
+
+    private static func transcriptLabel(for language: DictationLanguage) -> String {
+        switch language {
+        case .english: return "Transcript:"
+        case .portugueseBR: return "Transcrição:"
+        }
+    }
 
     // MARK: Request / response plumbing (pure, unit-tested)
 
     public static func makeRequest(
-        transcript: String, config: OllamaConfig, preserveList: String = ""
+        transcript: String, config: OllamaConfig, preserveList: String = "",
+        language: DictationLanguage = .english
     ) throws -> URLRequest {
         let url = config.baseURL.appendingPathComponent("api/generate")
         var request = URLRequest(url: url)
@@ -53,11 +90,11 @@ public enum OllamaCleaner {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = config.timeout
 
-        var prompt = instructionTemplate
+        var prompt = instructionTemplate(for: language)
         if !preserveList.isEmpty {
-            prompt += "\nPreserve these terms exactly as written; do not change their spelling: \(preserveList)."
+            prompt += "\n" + preserveInstruction(for: language, terms: preserveList)
         }
-        prompt += "\n\nTranscript:\n\(transcript)"
+        prompt += "\n\n" + transcriptLabel(for: language) + "\n" + transcript
 
         let body: [String: Any] = [
             "model": config.model,
@@ -94,11 +131,14 @@ public enum OllamaCleaner {
         }
 
         let lines = text.components(separatedBy: "\n")
+        let preamblePatterns = [
+            "^(sure[,!. ]*)?(okay[,!. ]*)?(here('s| is)? )?(the )?(cleaned|corrected|revised)[^:]*: *$",
+            "^(aqui (está|vai)|segue|versão|texto)\\b[^:]*: *$",
+        ]
         if let first = lines.first,
-           first.range(
-               of: "^(sure[,!. ]*)?(okay[,!. ]*)?(here('s| is)? )?(the )?(cleaned|corrected|revised)[^:]*: *$",
-               options: [.regularExpression, .caseInsensitive]
-           ) != nil {
+           preamblePatterns.contains(where: {
+               first.range(of: $0, options: [.regularExpression, .caseInsensitive]) != nil
+           }) {
             text = lines.dropFirst().joined(separator: "\n")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
         }
@@ -116,11 +156,15 @@ public enum OllamaCleaner {
     /// (unreachable daemon, timeout, bad payload, empty output) falls back to
     /// the raw transcript so dictation keeps working with the LLM stage down.
     public static func clean(
-        transcript: String, config: OllamaConfig, preserveList: String = ""
+        transcript: String, config: OllamaConfig, preserveList: String = "",
+        language: DictationLanguage = .english
     ) async -> CleanupOutcome {
         let request: URLRequest
         do {
-            request = try makeRequest(transcript: transcript, config: config, preserveList: preserveList)
+            request = try makeRequest(
+                transcript: transcript, config: config,
+                preserveList: preserveList, language: language
+            )
         } catch {
             return CleanupOutcome(text: transcript, fellBack: true, fallbackReason: "\(error)")
         }
