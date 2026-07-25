@@ -151,6 +151,7 @@ public final class DictationController: ObservableObject {
     private func process(samples: [Float]) {
         setState(.transcribing)
         let model = settings.whisperModel
+        let language = settings.language
         let cleanupEnabled = settings.cleanupEnabled
         let ollamaConfig = settings.ollamaConfig
         let injectionMethod = settings.injectionMethod
@@ -162,7 +163,7 @@ public final class DictationController: ObservableObject {
             do {
                 try transcriber.load(model: model)
                 transcript = TranscriptSanitizer.sanitize(
-                    try transcriber.transcribe(samples: samples, initialPrompt: primingPrompt)
+                    try transcriber.transcribe(samples: samples, initialPrompt: primingPrompt, language: language)
                 )
             } catch {
                 Task { @MainActor [weak self] in
@@ -179,6 +180,7 @@ public final class DictationController: ObservableObject {
                     cleanupEnabled: cleanupEnabled,
                     ollamaConfig: ollamaConfig,
                     injectionMethod: injectionMethod,
+                    language: language,
                     vocabulary: vocabulary
                 )
             }
@@ -190,6 +192,7 @@ public final class DictationController: ObservableObject {
         cleanupEnabled: Bool,
         ollamaConfig: OllamaConfig,
         injectionMethod: InjectionMethod,
+        language: DictationLanguage,
         vocabulary: Vocabulary
     ) async {
         // Clear any stale fallback warning from a previous dictation; it's only
@@ -204,10 +207,11 @@ public final class DictationController: ObservableObject {
         }
 
         var finalText = transcript
-        if CleanupGate.shouldClean(transcript: transcript, cleanupEnabled: cleanupEnabled) {
+        if CleanupGate.shouldClean(transcript: transcript, cleanupEnabled: cleanupEnabled, language: language) {
             setState(.cleaning)
             let outcome = await OllamaCleaner.clean(
-                transcript: transcript, config: ollamaConfig, preserveList: vocabulary.preserveList
+                transcript: transcript, config: ollamaConfig,
+                preserveList: vocabulary.preserveList, language: language
             )
             finalText = outcome.text
             if outcome.fellBack {
