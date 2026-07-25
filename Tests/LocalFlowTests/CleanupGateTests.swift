@@ -73,11 +73,12 @@ import Testing
 
     @Test func ptFillerFormsTriggerCleanup() {
         let cases = [
-            "Então éé, eu acho que a gente deveria revisar o código antes de fazer o deploy na sexta.",
+            "Éé, eu acho que a gente deveria revisar o código com calma antes de fazer o deploy na sexta.",
             "Tipo, eu não sei se isso vai funcionar porque a gente não testou o suficiente ainda.",
             "Eu acho que a gente deveria, né, testar mais antes de colocar em produção para o cliente.",
             "Sabe, o problema é que a gente não tem tempo suficiente para resolver tudo isso agora.",
             "Ãã, deixa eu pensar um pouco sobre isso antes de dar uma resposta definitiva para vocês.",
+            "Hã, deixa eu pensar um pouco sobre isso antes de dar uma resposta para toda a equipe agora.",
         ]
         for text in cases {
             #expect(
