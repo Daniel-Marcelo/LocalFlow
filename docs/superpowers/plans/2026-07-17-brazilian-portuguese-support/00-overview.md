@@ -58,9 +58,13 @@ Every task's requirements implicitly include these:
   and macro-plugin paths that plain `swift test` lacks).
 - **Compile checks** use `swift build` (debug is fine; the Metal shader is a
   runtime resource, not needed to compile).
-- **English regression:** existing English-only behaviour must be byte-for-byte
-  identical. All new parameters default to `.english` or English-equivalent
-  values so existing call sites compile unchanged.
+- **English regression:** existing English cleanup **behaviour and rules** are
+  preserved and every existing English test must stay green. All new parameters
+  default to `.english` or English-equivalent values so existing call sites
+  compile unchanged. The one intentional change to English output is the
+  approved defensive "do not translate — keep the input language" clause added
+  to the English cleanup instruction (Task 6) — this is by design, not a
+  regression.
 - **No auto-detection:** language is always explicit and user-selected.
   Auto-detect is a YAGNI.
 - **Model separation:** `.en` models are only offered for English. Multilingual
