@@ -143,6 +143,7 @@ private func freshDefaults(_ name: String) -> UserDefaults {
         defaults.set("large-v3-turbo", forKey: "whisperModel")
         let settings = Settings(defaults: defaults)
         #expect(settings.whisperModel(for: .english) == .largeV3Turbo)
+        #expect(defaults.string(forKey: "whisperModel.en") == "large-v3-turbo")
     }
 
     @Test func migrationDoesNotOverwriteExistingENKey() {
@@ -151,5 +152,6 @@ private func freshDefaults(_ name: String) -> UserDefaults {
         defaults.set("base.en", forKey: "whisperModel.en")
         let settings = Settings(defaults: defaults)
         #expect(settings.whisperModel(for: .english) == .baseEN)
+        #expect(defaults.string(forKey: "whisperModel.en") == "base.en")
     }
 }
