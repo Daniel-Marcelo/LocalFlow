@@ -68,4 +68,55 @@ import Testing
         let text = "The museum lent us an umbrella stand for the exhibition opening on Saturday night."
         #expect(!CleanupGate.shouldClean(transcript: text, cleanupEnabled: true))
     }
+
+    // MARK: Portuguese-specific filler detection
+
+    @Test func ptFillerFormsTriggerCleanup() {
+        let cases = [
+            "Então éé, eu acho que a gente deveria revisar o código antes de fazer o deploy na sexta.",
+            "Tipo, eu não sei se isso vai funcionar porque a gente não testou o suficiente ainda.",
+            "Eu acho que a gente deveria, né, testar mais antes de colocar em produção para o cliente.",
+            "Sabe, o problema é que a gente não tem tempo suficiente para resolver tudo isso agora.",
+            "Ãã, deixa eu pensar um pouco sobre isso antes de dar uma resposta definitiva para vocês.",
+        ]
+        for text in cases {
+            #expect(
+                CleanupGate.shouldClean(transcript: text, cleanupEnabled: true, language: .portugueseBR),
+                "Should trigger for: \(text.prefix(30))…"
+            )
+        }
+    }
+
+    @Test func ptBareEDoesNotTrigger() {
+        let text = "Eu acho que é importante revisar o código antes de fazer o deploy para produção na sexta."
+        #expect(!CleanupGate.shouldClean(transcript: text, cleanupEnabled: true, language: .portugueseBR))
+    }
+
+    @Test func ptCleanTranscriptSkipsCleanup() {
+        let text = "Precisamos revisar o pull request antes do deploy na sexta-feira para garantir a qualidade."
+        #expect(text.count > CleanupGate.minimumLength)
+        #expect(!CleanupGate.shouldClean(transcript: text, cleanupEnabled: true, language: .portugueseBR))
+    }
+
+    @Test func ptStutterRepeatsTriggerCleanup() {
+        let text = "A gente precisa precisa terminar isso antes do prazo que foi combinado com o cliente."
+        #expect(CleanupGate.shouldClean(transcript: text, cleanupEnabled: true, language: .portugueseBR))
+    }
+
+    @Test func ptLowercaseStartTriggersCleanup() {
+        let text = "precisamos revisar o pull request antes de fazer o deploy na sexta para garantir qualidade."
+        #expect(CleanupGate.shouldClean(transcript: text, cleanupEnabled: true, language: .portugueseBR))
+    }
+
+    @Test func ptMissingPunctuationTriggersCleanup() {
+        let text = "Precisamos revisar o pull request antes de fazer o deploy na sexta para garantir qualidade"
+        #expect(CleanupGate.shouldClean(transcript: text, cleanupEnabled: true, language: .portugueseBR))
+    }
+
+    @Test func englishBehaviourUnchangedWithExplicitLanguage() {
+        let clean = "Whisper already punctuates well-spoken sentences. This one needs no LLM pass at all."
+        #expect(!CleanupGate.shouldClean(transcript: clean, cleanupEnabled: true, language: .english))
+        let dirty = "So um, I was thinking that we could deploy the new version on Thursday afternoon."
+        #expect(CleanupGate.shouldClean(transcript: dirty, cleanupEnabled: true, language: .english))
+    }
 }

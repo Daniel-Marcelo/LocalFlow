@@ -11,20 +11,27 @@ public enum CleanupGate {
     /// Filler words / phrases that mark a transcript as needing cleanup.
     /// Deliberately conservative: only unambiguous disfluencies, matched on
     /// word boundaries ("um" must not fire inside "museum").
-    private static let fillerPattern =
+    private static let englishFillerPattern =
         "\\b(um+|uh+|uhm|erm|ehm|you know|i mean)\\b"
+
+    /// Portuguese hesitation forms and discourse crutches. Excludes bare "é"
+    /// (the verb "to be") — only elongated "éé"/"ãã"/"hã" and clear filler
+    /// words count, so ordinary prose isn't force-routed to the LLM.
+    private static let portugueseFillerPattern =
+        "\\b(éé+|ãã+|hã+|tipo|né|então|sabe)\\b"
 
     /// Stutter repeats: the same word twice in a row, optionally separated by
     /// a comma ("we should, should", "to to", "is, is").
     private static let stutterPattern =
         "\\b(\\w+)\\b,? +\\b\\1\\b"
 
-    public static func shouldClean(transcript: String, cleanupEnabled: Bool) -> Bool {
-        cleanupEnabled && transcript.count > minimumLength && needsCleanup(transcript)
+    public static func shouldClean(transcript: String, cleanupEnabled: Bool, language: DictationLanguage = .english) -> Bool {
+        cleanupEnabled && transcript.count > minimumLength && needsCleanup(transcript, language: language)
     }
 
-    static func needsCleanup(_ transcript: String) -> Bool {
+    static func needsCleanup(_ transcript: String, language: DictationLanguage = .english) -> Bool {
         let options: NSString.CompareOptions = [.regularExpression, .caseInsensitive]
+        let fillerPattern = language == .portugueseBR ? portugueseFillerPattern : englishFillerPattern
         if transcript.range(of: fillerPattern, options: options) != nil { return true }
         if transcript.range(of: stutterPattern, options: options) != nil { return true }
 
