@@ -1,7 +1,5 @@
 import Foundation
 
-/// The ggml Whisper models the user can choose between, downloaded from the
-/// official whisper.cpp repository on Hugging Face into Application Support.
 public enum WhisperModel: String, CaseIterable, Identifiable {
     case baseEN = "base.en"
     case baseENQ5 = "base.en-q5_1"
@@ -9,6 +7,10 @@ public enum WhisperModel: String, CaseIterable, Identifiable {
     case smallENQ5 = "small.en-q5_1"
     case largeV3Turbo = "large-v3-turbo"
     case largeV3TurboQ5 = "large-v3-turbo-q5_0"
+    case base = "base"
+    case baseQ5 = "base-q5_1"
+    case small = "small"
+    case smallQ5 = "small-q5_1"
 
     public static let `default` = WhisperModel.smallEN
 
@@ -28,6 +30,10 @@ public enum WhisperModel: String, CaseIterable, Identifiable {
         case .smallENQ5: return "small.en q5 — balanced, quantized"
         case .largeV3Turbo: return "large-v3-turbo — most accurate"
         case .largeV3TurboQ5: return "large-v3-turbo q5 — accurate, quantized"
+        case .base: return "base — fastest"
+        case .baseQ5: return "base q5 — fastest, quantized"
+        case .small: return "small — balanced (default)"
+        case .smallQ5: return "small q5 — balanced, quantized"
         }
     }
 
@@ -39,6 +45,32 @@ public enum WhisperModel: String, CaseIterable, Identifiable {
         case .smallENQ5: return "190 MB"
         case .largeV3Turbo: return "1.6 GB"
         case .largeV3TurboQ5: return "574 MB"
+        case .base: return "148 MB"
+        case .baseQ5: return "60 MB"
+        case .small: return "488 MB"
+        case .smallQ5: return "190 MB"
+        }
+    }
+
+    public var supportedLanguages: Set<DictationLanguage> {
+        switch self {
+        case .baseEN, .baseENQ5, .smallEN, .smallENQ5:
+            return [.english]
+        case .base, .baseQ5, .small, .smallQ5:
+            return [.portugueseBR]
+        case .largeV3Turbo, .largeV3TurboQ5:
+            return [.english, .portugueseBR]
+        }
+    }
+
+    public static func models(for language: DictationLanguage) -> [WhisperModel] {
+        allCases.filter { $0.supportedLanguages.contains(language) }
+    }
+
+    public static func `default`(for language: DictationLanguage) -> WhisperModel {
+        switch language {
+        case .english: return .smallEN
+        case .portugueseBR: return .small
         }
     }
 
