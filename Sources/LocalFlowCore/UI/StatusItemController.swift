@@ -87,6 +87,19 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
         }
 
         menu.addItem(.separator())
+        for lang in DictationLanguage.allCases {
+            let item = NSMenuItem(
+                title: lang.displayName,
+                action: #selector(switchLanguage(_:)),
+                keyEquivalent: ""
+            )
+            item.target = self
+            item.representedObject = lang
+            item.state = lang == controller.settings.language ? .on : .off
+            menu.addItem(item)
+        }
+
+        menu.addItem(.separator())
         let hint = NSMenuItem(title: activationHint, action: nil, keyEquivalent: "")
         hint.isEnabled = false
         menu.addItem(hint)
@@ -127,5 +140,11 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
 
     @objc private func openMicrophone() {
         Permissions.openMicrophoneSettings()
+    }
+
+    @objc private func switchLanguage(_ sender: NSMenuItem) {
+        guard let lang = sender.representedObject as? DictationLanguage else { return }
+        controller.settings.language = lang
+        controller.start()
     }
 }

@@ -26,7 +26,7 @@ make clean   # remove .build and LocalFlow.app
 - **Headless pipeline (no permissions, no mic):** exercises audio → Whisper → sanitize → gate
   → Ollama end to end from a file. Best way to test STT/LLM changes.
   ```sh
-  .build/release/LocalFlow --transcribe speech.aiff [--model base.en] [--no-cleanup] [--ollama-model gemma3:4b]
+  .build/release/LocalFlow --transcribe speech.aiff [--language en|pt] [--model base.en] [--no-cleanup] [--ollama-model gemma3:4b]
   say -o speech.aiff "some test sentence"   # generate test audio
   ```
   If built *without* the full Xcode Metal toolchain, prefix with
@@ -107,4 +107,7 @@ Models (`WhisperModel`) download on demand from Hugging Face into
 
 - Secure input fields (password boxes) block synthetic keyboard events at the OS level —
   dictation into them is impossible by design.
-- English-only: the `.en` Whisper models and the cleanup prompt are both English-specific.
+- Languages: English and Brazilian Portuguese. The active language is selected manually in
+  Settings or the menu bar. PT-BR uses Whisper's `pt` language code (no distinction from
+  European Portuguese at the STT stage); the Brazilian character is applied by the PT-BR
+  cleanup prompt.

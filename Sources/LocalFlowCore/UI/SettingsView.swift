@@ -31,8 +31,13 @@ struct SettingsView: View {
             }
 
             Section("Speech recognition") {
+                Picker("Language", selection: binding(\.language)) {
+                    ForEach(DictationLanguage.allCases) { lang in
+                        Text(lang.displayName).tag(lang)
+                    }
+                }
                 Picker("Whisper model", selection: binding(\.whisperModel)) {
-                    ForEach(WhisperModel.allCases) { model in
+                    ForEach(WhisperModel.models(for: settings.language)) { model in
                         Text("\(model.displayName) · \(model.approximateSize)").tag(model)
                     }
                 }
