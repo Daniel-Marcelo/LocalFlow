@@ -1,5 +1,6 @@
 import Foundation
 
+/// The dictation languages LocalFlow supports. The rawValue is the whisper.cpp language code ("en"/"pt").
 public enum DictationLanguage: String, CaseIterable, Identifiable {
     case english = "en"
     case portugueseBR = "pt"

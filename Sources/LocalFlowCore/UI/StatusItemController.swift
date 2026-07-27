@@ -144,6 +144,7 @@ public final class StatusItemController: NSObject, NSMenuDelegate {
 
     @objc private func switchLanguage(_ sender: NSMenuItem) {
         guard let lang = sender.representedObject as? DictationLanguage else { return }
+        guard lang != controller.settings.language else { return }
         controller.settings.language = lang
         controller.start()
     }

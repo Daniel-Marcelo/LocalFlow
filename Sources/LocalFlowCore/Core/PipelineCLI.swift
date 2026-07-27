@@ -45,6 +45,10 @@ public enum PipelineCLI {
             return 2
         }
         let resolvedModel = model ?? .default(for: language)
+        if let explicit = model, !explicit.supportedLanguages.contains(language) {
+            fputs("Model \(explicit.rawValue) does not support language \(language.rawValue); valid: \(WhisperModel.models(for: language).map(\.rawValue).joined(separator: ", "))\n", stderr)
+            return 2
+        }
 
         do {
             let samples = try AudioFileLoader.loadSamples(from: URL(fileURLWithPath: audioPath))

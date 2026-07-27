@@ -17,6 +17,10 @@ public enum CleanupGate {
     /// Portuguese hesitation forms and discourse crutches. Excludes bare "é"
     /// (the verb "to be") — only elongated "éé"/"ãã"/"hã" and clear filler
     /// words count, so ordinary prose isn't force-routed to the LLM.
+    /// Note: words like "então"/"né"/"sabe"/"tipo" are also ordinary Portuguese
+    /// words outside a filler role, so the gate may route some already-clean PT
+    /// transcripts to the LLM anyway — a deliberate latency-only tradeoff, since
+    /// the gate never affects correctness, only which stage does the cleanup.
     private static let portugueseFillerPattern =
         "\\b(éé+|ãã+|hã+|tipo|né|então|sabe)\\b"
 

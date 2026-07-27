@@ -1,16 +1,19 @@
 import Foundation
 
+/// The ggml Whisper models the user can choose between, downloaded on demand from the
+/// official whisper.cpp Hugging Face repo. English uses the English-only (.en) models;
+/// Brazilian Portuguese uses the multilingual variants; the large-v3-turbo models serve both.
 public enum WhisperModel: String, CaseIterable, Identifiable {
     case baseEN = "base.en"
     case baseENQ5 = "base.en-q5_1"
     case smallEN = "small.en"
     case smallENQ5 = "small.en-q5_1"
-    case largeV3Turbo = "large-v3-turbo"
-    case largeV3TurboQ5 = "large-v3-turbo-q5_0"
     case base = "base"
     case baseQ5 = "base-q5_1"
     case small = "small"
     case smallQ5 = "small-q5_1"
+    case largeV3Turbo = "large-v3-turbo"
+    case largeV3TurboQ5 = "large-v3-turbo-q5_0"
 
     public static let `default` = WhisperModel.smallEN
 

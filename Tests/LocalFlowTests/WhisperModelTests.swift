@@ -7,9 +7,9 @@ import Testing
         #expect(WhisperModel.allCases.map(\.rawValue) == [
             "base.en", "base.en-q5_1",
             "small.en", "small.en-q5_1",
-            "large-v3-turbo", "large-v3-turbo-q5_0",
             "base", "base-q5_1",
             "small", "small-q5_1",
+            "large-v3-turbo", "large-v3-turbo-q5_0",
         ])
     }
 
