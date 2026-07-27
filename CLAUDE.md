@@ -101,7 +101,10 @@ whisper's resource lookup can't find its bundle from inside a packaged `.app`. T
    slower — watch for `ggml_metal_init: error` on stderr).
 
 Models (`WhisperModel`) download on demand from Hugging Face into
-`~/Library/Application Support/LocalFlow/models/`. English-only (`.en`) by design.
+`~/Library/Application Support/LocalFlow/models/`. English uses the English-only (`.en`)
+models; Brazilian Portuguese uses the multilingual variants (`WhisperModel.models(for:)`
+picks the set for the active language). The `large-v3-turbo` models are multilingual and
+serve both.
 
 ## Known constraints
 
